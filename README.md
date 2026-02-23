@@ -2,21 +2,48 @@
 
 Convert your photos directly to 3D-printable GCODE in seconds.
 
-**Image → 3D Model → Sliced GCODE → Print**
+**Image → 3D Model (4 modes) → Sliced GCODE → Print**
 
-## Vision
+Lightyear combines the power of **G1 Print Pipeline** with a streamlined, user-friendly interface designed for makers.
 
-Remove the barriers to 3D printing. You shouldn't need to know CAD, mesh topology, or slicing parameters. Point your camera at something, and get a printable file. That's the goal.
+## 🎯 Vision
 
-## Features
+Remove the barriers to 3D printing. You shouldn't need CAD expertise or a degree in mesh topology. Point your camera at something, run one command, and get a printable file. That's the goal.
 
-✅ **Image to 3D Mesh** - Heightmap-based conversion (fast, no AI needed)  
-✅ **Automatic Slicing** - PrusaSlicer CLI integration  
-✅ **One-Command Pipeline** - `photo_to_print.py image.jpg`  
-✅ **Modular Design** - Use individual modules or the full pipeline  
-✅ **Printer-Ready** - Outputs valid GCODE for Ender 3 V2 and compatible printers  
+## ✨ Features
 
-## Quick Start
+### Photo-to-3D Conversion
+✅ **4 Intelligent Modes:**
+- **Heightmap** — Fast, detail-preserving relief (default, best for photos)
+- **Silhouette** — Extracts & extrudes object outlines (great for clear subjects on plain backgrounds)
+- **Revolution** — Creates surfaces of revolution (perfect for vases, bottles, cylindrical objects)
+- **Lithophane** — Artistic thickness-based relief for backlit prints (photos glow when backlit!)
+
+✅ **Smart Processing:**
+- Shape-from-shading depth estimation
+- Edge detection with Sobel filters
+- Contour extraction & smart fallbacks
+- Automatic mesh repair (watertight + fix winding)
+- No GPU required (pure CPU)
+
+### Slicing & Export
+✅ **PrusaSlicer CLI Integration**
+- Automatic G-code generation
+- Ender 3 V2 optimized profiles
+- Tree supports, gyroid infill, adaptive layers
+- Customizable materials & print speeds
+
+✅ **Modular Architecture**
+- Use individual modules or full pipeline
+- Swappable components
+- Easy to extend
+
+### Printer Control (Roadmap)
+⏳ **OctoPrint Integration** — Upload & print directly
+⏳ **AI Failure Detection** — Real-time monitoring + auto-correction
+⏳ **WhatsApp Control** — Remote print management
+
+## 🚄 Quick Start
 
 ### Installation
 
@@ -25,154 +52,231 @@ Remove the barriers to 3D printing. You shouldn't need to know CAD, mesh topolog
 git clone https://github.com/2233morpheus/lightyear.git
 cd lightyear
 
-# Create venv with dependencies
+# Create venv
 python3 -m venv venv
 source venv/bin/activate
 
-# Install Python dependencies
-pip install numpy pillow trimesh requests
+# Install dependencies
+pip install -r requirements.txt
 
-# Install PrusaSlicer (required for slicing)
-# On Ubuntu/Debian:
+# Install PrusaSlicer (required for GCODE generation)
+# Ubuntu/Debian:
 sudo apt install prusa-slicer
-# Or via Flatpak:
+# Or Flatpak:
 flatpak install flathub com.prusa3d.PrusaSlicer
 ```
 
 ### Usage
 
-**One-liner - full pipeline:**
+**One-liner — full pipeline:**
 ```bash
 python3 photo_to_print.py photo.jpg
 ```
+Output: `photo_heightmap.gcode` (ready to print!)
 
-Output: `photo.gcode` (ready to print!)
-
-**Customized settings:**
+**Choose a mode:**
 ```bash
-python3 photo_to_print.py photo.jpg --width 80 --scale-z 8 --printer "Ender 3"
+# Silhouette mode (better for clear subjects)
+python3 photo_to_print.py photo.jpg --mode silhouette
+
+# Lithophane mode (artistic backlit effect)
+python3 photo_to_print.py portrait.jpg --mode lithophane --width 100
+
+# Revolution mode (for cylindrical objects)
+python3 photo_to_print.py vase.jpg --mode revolution --width 80 --scale-z 10
+```
+
+**Customize everything:**
+```bash
+python3 photo_to_print.py photo.jpg \
+  --mode heightmap \
+  --width 120 \
+  --scale-z 8 \
+  --printer "Ender 3" \
+  --print-profile "0.15mm QUALITY" \
+  --material "PETG" \
+  --verbose
 ```
 
 **Using individual modules:**
-
 ```bash
 # Just convert image to STL
-python3 image_processor.py photo.jpg -o model.stl --width 50 --scale-z 5
+python3 image_processor.py photo.jpg --mode silhouette -o model.stl --width 50
 
 # Just slice STL to GCODE
 python3 slicer_wrapper.py model.stl -o model.gcode --printer "Ender 3"
 
-# Upload to OctoPrint (when printer is online)
-python3 octoprint_wrapper.py model.gcode --host http://192.168.178.47:5000 --api-key YOUR_KEY --print
+# Upload to OctoPrint (when available)
+python3 octoprint_wrapper.py model.gcode --host http://printer-ip:5000 --api-key YOUR_KEY --print
 ```
 
-## Parameters
+## 📊 Parameters
 
 | Parameter | Default | Notes |
 |-----------|---------|-------|
+| `--mode` | heightmap | Conversion technique (heightmap, silhouette, revolution, lithophane) |
 | `--width` | 50mm | Model base width |
-| `--scale-z` | 5mm | Height exaggeration (smaller = flatter) |
-| `--printer` | "Ender 3" | Printer profile in PrusaSlicer |
-| `--print-profile` | "0.2mm NORMAL" | Layer height + speed preset |
-| `--material` | "PLA" | Material type for temp/speed |
+| `--scale-z` | 5mm | Height exaggeration (N/A for lithophane) |
+| `--printer` | Ender 3 | Printer profile |
+| `--print-profile` | 0.2mm NORMAL | Layer height + speed |
+| `--material` | PLA | Material type |
 
-## Examples
+## 🎬 Examples
 
 ```bash
-# Small detailed print
-python3 photo_to_print.py portrait.jpg --width 30 --scale-z 3
+# Small, detailed portrait (lithophane)
+python3 photo_to_print.py portrait.jpg --mode lithophane --width 80
 
-# Large artistic piece
-python3 photo_to_print.py landscape.jpg --width 120 --scale-z 10
+# Large artistic relief
+python3 photo_to_print.py landscape.jpg --mode heightmap --width 150 --scale-z 15
+
+# Object silhouette
+python3 photo_to_print.py toy.jpg --mode silhouette --width 40
 
 # Fast low-quality preview
 python3 photo_to_print.py test.jpg --print-profile "0.4mm DRAFT"
+
+# High-quality PETG print
+python3 photo_to_print.py detail.jpg --material "PETG" --print-profile "0.15mm QUALITY"
 ```
 
-## Architecture
+## 🏗️ Architecture
 
 ```
 photo.jpg
-   ↓
+  ↓
 image_processor.py
-   ↓ (heightmap → mesh)
-model.stl (957 KB)
-   ↓
+  ↓ (heightmap/silhouette/revolution)
+model.stl (957 KB, 10k vertices)
+  ↓
 slicer_wrapper.py
-   ↓ (PrusaSlicer CLI)
-model.gcode (164 KB)
-   ↓
-octoprint_wrapper.py (optional)
-   ↓ (upload + print)
+  ↓ (PrusaSlicer CLI)
+model.gcode (164 KB, ready to print)
+  ↓
+octoprint_wrapper.py (coming soon)
+  ↓ (upload + print)
 🖨️ Printer
+  ↓
+Print!
 ```
 
-## Hardware Support
+## 🔌 Hardware Support
 
-**Tested:**
-- Ender 3 V2 (with OctoPrint)
-- Generic RepRap-compatible machines
+**Tested & Optimized:**
+- Ender 3 V2 (with OctoPrint - coming soon)
 
-**In Progress:**
-- Multi-material slicing
-- Auto-supports generation
-- Failure detection + auto-correction
+**Should work:**
+- Any RepRap-compatible FDM printer
+- Custom profiles easily configurable
 
-## Roadmap
+**Roadmap:**
+- Prusa i3 MK3S+
+- Anycubic i3 Mega
+- CR-10
+- Custom multi-material rigs
 
-- [ ] ML-based 3D reconstruction (TripoSR, Shap-E) for quality improvements
-- [ ] OctoPrint integration (full automation)
-- [ ] Web UI for easy image upload
-- [ ] Batch processing (folder → multiple prints)
-- [ ] Material library (optimize temps/speeds)
-- [ ] Print failure detection
+## 🗺️ Roadmap
 
-## Current Limitations
+### Phase 1: Foundations (✅ Complete)
+- ✅ Image→STL conversion (4 modes)
+- ✅ PrusaSlicer integration
+- ✅ GCODE generation
+- ✅ Modular architecture
+- ✅ Open source release
 
-1. **Quality:** Heightmap method is fast but loses 3D detail. Use for artistic/decorative prints, not precision parts.
-2. **Mesh:** STL files aren't always watertight. PrusaSlicer auto-repairs, but complex models may need post-processing.
-3. **Printer:** Only tested on Ender 3 V2. Other printers need profile adjustment.
+### Phase 2: Automation (In Progress)
+- ⏳ OctoPrint integration (Docker setup ready)
+- ⏳ Tailscale VPN for remote access
+- ⏳ Direct printer upload + start
+- ⏳ Print progress monitoring
 
-## Known Issues
+### Phase 3: Intelligence (Planned)
+- ⏳ AI failure detection (spaghetti, layer shift, warping, etc.)
+- ⏳ Auto-corrective actions (pause, adjust temps, resume)
+- ⏳ WhatsApp control & alerts
+- ⏳ Learning from print history
 
-- Floating objects detected by slicer (expected for heightmap-based models)
-- Some materials require manual profile tweaking
-- PrusaSlicer CLI doesn't support all GUI features
+### Phase 4: Polish (Future)
+- ⏳ Material library (optimize temps/speeds per filament)
+- ⏳ Web UI for non-technical users
+- ⏳ Batch processing (folder → multiple prints)
+- ⏳ Expected vs. actual layer comparison
+- ⏳ Closed-loop optimization
 
-## Development
+### Phase 5: Scale
+- ⏳ SaaS platform (users upload photos, we print)
+- ⏳ Hosted printing service
+- ⏳ Multi-printer management
+- ⏳ Material marketplace
 
-### Testing
+## 🏛️ Built on G1
 
-```bash
-# Test image conversion
-python3 image_processor.py test.jpg -o test.stl
+Lightyear integrates advanced techniques from the **G1 Print Pipeline**:
 
-# Test slicing
-python3 slicer_wrapper.py test.stl -o test.gcode
+| Component | Source | Status |
+|-----------|--------|--------|
+| Photo-to-3D (4 modes) | [g1_photo_to_3d.py](#) | ✅ Integrated |
+| PrusaSlicer wrapper | [slicer_wrapper.py](#) | ✅ Working |
+| OctoPrint API client | [octoprint_wrapper.py](#) | ✅ Ready |
+| **Print optimization** | [print-pipeline](https://github.com/2233morpheus/print-pipeline) | 🔜 Coming |
+| **Failure detection** | [print-monitor](https://github.com/2233morpheus/print-monitor) | 🔜 Coming |
+| **Remote infrastructure** | [octoprint-remote](https://github.com/2233morpheus/octoprint-remote) | 🔜 Coming |
 
-# Test full pipeline with verbose output
-python3 photo_to_print.py test.jpg --verbose
-```
+## 📚 Documentation
 
-### Contributing
+- [Installation Guide](#installation)
+- [Usage Examples](#examples)
+- [Parameter Reference](#parameters)
+- [Mode Comparison](#photo-to-3d-conversion)
+- [Troubleshooting](#faq)
+
+## ❓ FAQ
+
+### Q: Why are my prints coming out weird?
+**A:** Try different modes! Heightmap works best for photos with good lighting and detail. Silhouette works better for isolated objects. Lithophane is pure art.
+
+### Q: Can I use this for production?
+**A:** Not yet. Phase 3 adds failure detection + auto-correction. Phase 2 (OctoPrint) is coming soon.
+
+### Q: Does it work on Windows/Mac?
+**A:** Yes! Python is cross-platform. PrusaSlicer works on all major OS. Just install dependencies and run.
+
+### Q: Can I integrate my own slicer?
+**A:** Absolutely. `slicer_wrapper.py` is modular. Fork the repo and add your slicer.
+
+### Q: What about multi-material printing?
+**A:** Coming in Phase 4, with material library support.
+
+## 🤝 Contributing
 
 Pull requests welcome! Areas we need help:
 - Better ML models for 3D reconstruction
 - More printer profiles
 - Web UI
-- OctoPrint integration completion
+- Failure detection improvements
+- Material optimizations
 
-## License
+## 📜 License
 
-MIT (see LICENSE file)
+MIT License. See [LICENSE](LICENSE) for details.
 
-## Credits
+## 🙏 Credits
 
-Built on G1's foundation. Lightyear continues the mission of making 3D printing accessible to everyone.
+**Lightyear** carries forward **G1's** mission of making 3D printing accessible to everyone.
+
+Built with:
+- [G1 Print Pipeline](https://github.com/2233morpheus/print-pipeline) — Core algorithms
+- [Print Monitor](https://github.com/2233morpheus/print-monitor) — Failure detection
+- [OctoPrint Remote](https://github.com/2233morpheus/octoprint-remote) — Remote infrastructure
+
+**Author:** Khaled Elmajed ([@2233morpheus](https://github.com/2233morpheus))
 
 ---
 
-**Questions?** Open an issue or check the docs.  
-**Want to contribute?** Fork + PR!
+**Questions?** Open an issue.  
+**Want to contribute?** Fork + PR!  
+**Want to chat?** Reach out on GitHub.
 
-Happy printing! 🖨️✨
+### Happy printing! 🖨️✨
+
+*From inspiration to creation, in seconds.*
